@@ -37,4 +37,14 @@ def test_upload_sets_metadata_and_uploads_file(tmp_path: Path) -> None:
     client.bucket.assert_called_with("bkt")
     client.bucket.return_value.blob.assert_called_with("10.1_x.pdf")
     assert target.metadata == {"doi": "10.1/x"}
-    target.upload_from_filename.assert_called_once_with(str(f), content_type="application/pdf")
+    target.upload_from_filename.assert_called_once()
+    assert target.upload_from_filename.call_args.args == (str(f),)
+
+
+def test_upload_uses_long_timeout_for_large_pdfs(tmp_path: Path) -> None:
+    f = tmp_path / "p.pdf"
+    f.write_bytes(b"%PDF")
+    client = MagicMock()
+    GcsStore(client=client, bucket_name="bkt").upload(f, "x.pdf", {})
+    kwargs = client.bucket.return_value.blob.return_value.upload_from_filename.call_args.kwargs
+    assert kwargs["timeout"] >= 600

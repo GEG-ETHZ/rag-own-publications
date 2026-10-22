@@ -76,3 +76,21 @@ def test_doi_override_names_file(tmp_path: Path) -> None:
     store = FakeStore(BucketState(names=frozenset(), md5_to_name={}))
     assert cli.run(["upload", str(pdf), "--offline", "--doi", "10.5555/forced"], store=store) == 0
     assert store.uploads[0][0] == "10.5555_forced.pdf"
+
+
+class FlakyStore(FakeStore):
+    def upload(self, path: Path, name: str, metadata: Mapping[str, str]) -> None:
+        if path.name == "2021_B.pdf":
+            raise TimeoutError("The write operation timed out")
+        super().upload(path, name, metadata)
+
+
+def test_failed_upload_is_reported_and_the_run_continues(
+    folder: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    store = FlakyStore(BucketState(names=frozenset(), md5_to_name={}))
+    code = cli.run(["migrate", str(folder), "--offline"], store=store)
+    names = [name for name, _ in store.uploads]
+    assert code == 1
+    assert "10.1000_one.pdf" in names and "some-heading-text.pdf" in names
+    assert "upload failed" in capsys.readouterr().out

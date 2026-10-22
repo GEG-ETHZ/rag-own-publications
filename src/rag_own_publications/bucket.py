@@ -11,6 +11,8 @@ from google.cloud import storage
 from rag_own_publications.plan import BucketState
 
 PDF_CONTENT_TYPE = "application/pdf"
+# Per-request timeout in seconds. The library default (60 s) is too short for a 30 MB PDF on a slow uplink.
+UPLOAD_TIMEOUT_SECONDS = 900
 
 
 class ObjectStore(Protocol):
@@ -51,7 +53,7 @@ class GcsStore:
         """Upload ``path`` as ``name`` with custom metadata; overwrites an existing object of that name."""
         blob = self.client.bucket(self.bucket_name).blob(name)
         blob.metadata = dict(metadata)
-        blob.upload_from_filename(str(path), content_type=PDF_CONTENT_TYPE)
+        blob.upload_from_filename(str(path), content_type=PDF_CONTENT_TYPE, timeout=UPLOAD_TIMEOUT_SECONDS)
 
 
 def gcs_store(project: str, bucket_name: str) -> GcsStore:

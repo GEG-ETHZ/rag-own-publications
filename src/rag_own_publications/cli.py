@@ -131,11 +131,26 @@ def process(pdfs: list[Path], options: Options, store: ObjectStore) -> list[Deci
         paper, record = describe(path, options, client)
         decision = decide(paper, state, force=options.force)
         if decision.action is Action.UPLOAD and decision.target_name:
-            if not options.dry_run:
-                store.upload(path, decision.target_name, metadata_for(paper, record))
-            state = state.with_object(decision.target_name, paper.md5)
+            decision = upload_one(path, decision, record, options, store)
+            if decision.action is Action.UPLOAD:
+                state = state.with_object(decision.target_name or "", paper.md5)
         decisions.append(decision)
     return decisions
+
+
+def upload_one(
+    path: Path, decision: Decision, record: Record | None, options: Options, store: ObjectStore
+) -> Decision:
+    """Upload one file; a network failure is reported for that file and does not stop the run."""
+    if options.dry_run or decision.target_name is None:
+        return decision
+    try:
+        store.upload(path, decision.target_name, metadata_for(decision.paper, record))
+    except Exception as error:  # noqa: BLE001  any transport error: report, keep going, rerun retries
+        print(f"error: {path.name}: upload failed: {error}", file=sys.stderr)
+        return Decision(decision.paper, Action.FAILED, decision.target_name, type(error).__name__)
+    print(f"uploaded {path.name} -> {decision.target_name}", file=sys.stderr, flush=True)
+    return decision
 
 
 def render(decisions: list[Decision], dry_run: bool) -> str:
@@ -159,7 +174,8 @@ def run(argv: Sequence[str], store: ObjectStore | None = None) -> int:
         pdfs = collect_pdfs(options, Path(tmp))
         decisions = process(pdfs, options, store)
     print(render(decisions, options.dry_run))
-    return EXIT_ATTENTION if any(d.action is Action.NEEDS_OVERRIDE for d in decisions) else EXIT_OK
+    attention = {Action.NEEDS_OVERRIDE, Action.FAILED}
+    return EXIT_ATTENTION if any(d.action in attention for d in decisions) else EXIT_OK
 
 
 def main() -> None:

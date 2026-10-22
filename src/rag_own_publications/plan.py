@@ -36,6 +36,7 @@ class Action(Enum):
     SKIP_SAME_BYTES = "skip: same file already in bucket"
     SKIP_NAME_EXISTS = "skip: name already in bucket"
     NEEDS_OVERRIDE = "needs --doi or --title"
+    FAILED = "upload failed, rerun to retry"
 
 
 @dataclass(frozen=True)
