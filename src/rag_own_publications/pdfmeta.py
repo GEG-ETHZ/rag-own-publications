@@ -7,7 +7,7 @@ from typing import Any
 import pymupdf
 
 PAGES_TO_SCAN = 2
-JUNK_TITLE_PREFIXES = ("microsoft word", "untitled", "doi:", "pii:")
+JUNK_TITLE_PREFIXES = ("microsoft word", "untitled", "coversheet", "doi:", "pii:")
 JUNK_TITLE_SUFFIXES = (".doc", ".docx", ".tex", ".pdf", ".dvi", ".indd")
 MIN_TITLE_LENGTH = 8
 

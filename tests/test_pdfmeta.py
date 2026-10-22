@@ -78,3 +78,9 @@ def test_title_ignores_arxiv_stamp_in_the_margin(tmp_path: Path) -> None:
     page.insert_text((20, 300), "arXiv:1801.08321v1 [physics.geo-ph] 25 Jan 2018", fontsize=16, rotate=90)
     doc.save(str(pdf))
     assert title_from(read_pdf(pdf)) == "A Real Paper Title About Fractures"
+
+
+def test_title_from_treats_coversheet_as_junk(tmp_path: Path) -> None:
+    pdf = tmp_path / "report.pdf"
+    make_pdf(pdf, "Coversheet", "Code development for modeling induced seismicity", "body")
+    assert title_from(read_pdf(pdf)) == "Code development for modeling induced seismicity"
