@@ -30,4 +30,9 @@ gcloud functions deploy "${FUNCTION_NAME}" \
   --service-account "${SERVICE_ACCOUNT}" \
   --set-env-vars "GCP_SECRET_ID=${SECRET_ID},GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_CLOUD_PROJECT=${PROJECT}" \
   --timeout 540s \
-  --memory 512Mi
+  --memory 512Mi \
+  --max-instances 1 \
+  --concurrency 1 \
+  --retry
+# One instance, one request: RAG Engine allows one import per corpus at a time.
+# --retry: Eventarc redelivers an event whose import failed, for up to 24 h.

@@ -7,6 +7,7 @@ import functions_framework
 import vertexai
 from cloudevents.http import CloudEvent
 from google.cloud import secretmanager
+from retry import call_when_free
 from vertexai.preview import rag
 
 logging.basicConfig(level=logging.INFO)
@@ -68,12 +69,14 @@ def process_file(cloud_event: CloudEvent) -> None:
 
     try:
         gemini_model_name = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.5-flash")
-        response = rag.import_files(
-            corpus_name=corpus_id,
-            paths=gcs_source,
-            transformation_config=transformation_config,
-            llm_parser=rag.LlmParserConfig(model_name=gemini_model_name),
-            timeout=500,
+        response = call_when_free(
+            lambda: rag.import_files(
+                corpus_name=corpus_id,
+                paths=gcs_source,
+                transformation_config=transformation_config,
+                llm_parser=rag.LlmParserConfig(model_name=gemini_model_name),
+                timeout=500,
+            )
         )
         logger.info(f"Import completed. Imported files count: {response.imported_rag_files_count}")
     except Exception as e:

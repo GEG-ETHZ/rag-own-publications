@@ -97,6 +97,6 @@ disallow_untyped_calls = false
 
 # function/main.py is deployed as-is to Cloud Functions; functions_framework's decorator is untyped.
 [[tool.mypy.overrides]]
-module = ["main"]
+module = ["main", "retry"]
 disallow_untyped_decorators = false
 warn_return_any = false
