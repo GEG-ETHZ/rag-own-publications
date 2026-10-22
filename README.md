@@ -1,185 +1,75 @@
-# RAG Own Publications
+# rag-own-publications
 
-Upload GEG publications to the RAG bucket under DOI-based names, skipping duplicates.
+Puts a GEG paper into the literature RAG bucket under its DOI name and skips it when it is already
+there. Also holds the Cloud Function that ingests each new PDF into the Vertex AI RAG corpus.
 
-> **Built on the GEG Python template.** This project entails [`uv`](https://docs.astral.sh/uv/) for dependencies and environments, [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting, [`mypy`](https://mypy-lang.org/) for type checks, [`pre-commit`](https://pre-commit.com/) hooks, and a working GitLab CI pipeline. A new contributor only needs `uv sync` to be productive, and every GEG repo looks the same to reviewers. See [About](#about) for the exact generation command.
->
-> **First time on a template-generated project?** Read the rest of this README end-to-end — it documents our conventions.
+Why: people uploaded the same paper under different hand-written names, and the RAG answered from
+duplicates. A name derived from the DOI is the same no matter who uploads.
 
-## Table of contents
+## Use
 
-- [Quick Start](#quick-start)
-- [Getting Started](#getting-started)
-- [Repository Setup](#repository-setup)
-- [Project Structure](#project-structure)
-
-- [Developers](#developers)
-
-<a id="about"></a>
-<details>
-<summary><strong>About</strong></summary>
-
-This project was generated from the [GEG Python template](https://gitlab.ethz.ch/geg/templates/python-template) by running:
+Once:
 
 ```bash
-uvx --from cookiecutter cookiecutter git@gitlab.ethz.ch:geg/templates/python-template.git
+gcloud auth login
+gcloud auth application-default login
+uv tool install git+https://github.com/GEG-ETHZ/rag-own-publications
 ```
-</details>
 
-## Quick Start
+Per paper:
 
 ```bash
-cd rag-own-publications
-just setup # 'just' is a modern command runner (like 'make' but works for both macOS/Linux AND Windows)
+geg-rag-upload upload paper.pdf                 # --dry-run shows the plan without uploading
+geg-rag-upload upload paper.pdf --doi 10.1000/x # when the PDF carries no DOI
+geg-rag-upload migrate ~/papers --dry-run       # a whole folder, or gs://some-bucket
 ```
 
-That is enough to install dependencies and git hooks so you can work locally.
-More information: Don't have `just` → [Getting Started](#getting-started). GitLab remote and first push → [Repository Setup](#repository-setup).
+The tool prints one line per file: source, DOI, target name, action and reason. Exit code 1 means at
+least one file needs `--doi` or `--title`.
 
+## How a file is named
 
-<a id="getting-started"></a>
-<details>
-<summary><strong>Getting Started</strong></summary>
+| Found | Object name | Example |
+|---|---|---|
+| DOI in PDF metadata or on the first two pages, confirmed at doi.org | DOI, lower case, `/` and other unsafe characters become `_` | `10.1016_j.cesys.2022.100086.pdf` |
+| No DOI, but a title (Crossref, PDF metadata or the largest-font line on page 1) | `python-slugify` of the title, at most 120 characters | `natural-convection-in-porous-media.pdf` |
+| Neither | the tool stops and asks for `--doi` or `--title` | |
 
-### 1. Install required tools
+## When a file is skipped
 
-[**uv**](https://docs.astral.sh/uv/getting-started/installation/) — manages dependencies and your Python environment.
+- The target name already exists in the bucket (`--force` overwrites).
+- A byte-identical file exists under any name. Never overridden; a second copy helps nobody.
 
-### 2. Install optional tools (recommended)
+DOI, title, year, first author, original file name, uploader and time are written to the object's
+custom metadata, so the bucket stays flat and still searchable.
 
-[**just**](https://just.systems/man/en/packages.html) — wraps the setup steps into a single `just setup` command. Without it, run the steps manually (see below).
-- macOS: `brew install just`
-- Linux: see [just installation docs](https://just.systems/man/en/packages.html)
-- Windows: `winget install Casey.Just` or `scoop install just`
+## Layout
 
-[**direnv**](https://direnv.net) *(macOS/Linux only)* — auto-activates your environment on `cd` so you never need to run `source .venv/bin/activate` manually. Without it, activate the environment yourself each session (`source .venv/bin/activate` / `.venv\Scripts\Activate.ps1`).
-- Install via your package manager (`brew install direnv` / `sudo apt install direnv`)
-- Add the shell hook to your rc file: `eval "$(direnv hook zsh)"` or `eval "$(direnv hook bash)"`
-- See [direnv hook docs](https://direnv.net/docs/hook.html) for other shells
-
-### 3. Run setup
-
-**With just:**
-```bash
-just setup
-```
-Runs `uv sync`, approves `.envrc` if direnv is installed (macOS/Linux), and installs git hooks.
-
-**Without just:**
-```bash
-uv sync
-direnv allow .   # macOS/Linux with direnv only
-uv run prek install --hook-type pre-commit --hook-type pre-push --hook-type post-checkout --overwrite
-```
-
-> **Windows note:** prek hooks run as shell scripts — [Git for Windows](https://git-scm.com/download/win) (which includes Git Bash) must be installed.
-
-</details>
-
-<a id="repository-setup"></a>
-<details>
-<summary><strong>Repository Setup</strong></summary>
-
-**Note: One-time action. This section can be deleted after initial setup.**
-
-If you just generated this project from the template, you need to connect it to a remote repository:
-1. **Create the remote repository:** Create a new project in
-   [GitLab](https://gitlab.ethz.ch/geg) (unless it is already known that the
-   project will be released publicly via [GitHub](https://github.com/GEG-ETHZ/)).
-   - **Uncheck "Initialize repository with a README"** — the repository must be
-     empty so the local history can be pushed without conflicts.
-   - *Note: If you run into permissions issues creating the repository, please
-      contact the Software Team (e.g., Chad Baker, Anton Kulik).*
-1. **Link your local repository:** Follow the [Syncing with Multiple Repos](https://gitlab.ethz.ch/geg/computing-guide/-/wikis/git#syncing-with-multiple-repos) guide to set up your git remotes.
-   - *Example:* `git remote add origin git@gitlab.ethz.ch:geg/your-project.git`
-1. **Push the initial commit immediately** — before making any deliberate commits.
-   This verifies the generated baseline passes CI before you build on top of it.
-   ```
-   git push -u --no-verify origin main
-   ```
-   - `--no-verify` skips local pre-push hooks (mypy/pytest) for this push only — **do not use it again.**
-   - **If branch protection blocks the push:** first request Owner role from an admin
-     (e.g. Chad Baker or Anton Kulik) — this alone may resolve it. If it still blocks,
-     temporarily unprotect main in GitLab → Your Project → Settings → Repository →
-     Protected Branches, push, then re-enable protection.
-1. **GitLab Runner:** The GEG group runner handles CI automatically — no per-project setup needed.
-1. **GitLab project settings:** Configure merge rules and branch protection once as a Maintainer, via the GitLab UI (not scripted, to avoid granting agents API access to repository settings).
-
-   **Settings → General → Merge requests:**
-
-   | Setting | Value |
-   |---|---|
-   | Merge method | Merge commit |
-   | Squash commits | Encourage |
-   | ☑ Pipelines must succeed | checked |
-   | ☑ Delete source branch | checked |
-
-   **Settings → Repository → Protected branches:**
-
-   | Branch | Allowed to merge | Allowed to push and force push |
-   |---|---|---|
-   | `main` | Maintainers | No one |
-   | `develop` | Maintainers | Developers + Maintainers |
-
-   See [Confluence/OPS: Code — GitLab project settings](https://unlimited.ethz.ch/spaces/GEG/pages/441418531/OPS+Code#OPS%3ACode-GitLabprojectsettings) for the full rationale.
-1. **Auto-tagging token:** The CI pipeline tags branches on merge (`bak/<branch-name>`) — this needs a one-time token.
-   Create a Project Access Token under **Settings → Access Tokens → Add new token**:
-   - **Token name**: `GITLAB_PUSH_TOKEN`
-   - **Description**: `allows gitlab runner to tag branches`
-   - **Expiration date**: leave blank (no expiration)
-   - **Role**: Developer
-   - **Scope**: `write_repository`
-
-   GitLab shows the token value only once — copy it immediately and add it as a CI/CD variable under **Settings → CI/CD → Variables**:
-   - **Key**: `GITLAB_PUSH_TOKEN`
-   - **Value**: paste the token here
-   - **Visibility**: Masked
-   - **Protect variable**: unchecked (protected variables are not injected into unprotected MR branches)
-
-</details>
-
-## Project Structure
-Layout of the generated repo.
-**Note: This section should be deleted when creating a specific project from this template.**
 ```text
-└── rag-own-publications
-    ├── README.md
-    ├── pyproject.toml
-    ├── .gitignore
-    ├── .python-version
-    ├── data/        # Raw and processed data files (ignored by git by default)
-    ├── outputs/     # Generated figures, reports, and models
-    ├── scripts/     # Standalone Python scripts for data processing and analysis
-    ├── src/         # Installable Python package source code and project-specific utilities
-    │   └── rag-own-publications
-    │       └── __init__.py
-    ├── tests/       # Unit and integration tests
-    │   ├── __init__.py
-    │   └── test_demo.py
-
-    └── uv.lock
+src/rag_own_publications/   the CLI
+  doi.py        find and normalise a DOI
+  naming.py     DOI or title to object name
+  plan.py       pure decision logic, no I/O
+  pdfmeta.py    PyMuPDF: metadata, text, largest-font line
+  crossref.py   doi.org check and Crossref record
+  bucket.py     Google Cloud Storage
+  cli.py        argument parsing and the run loop
+function/       the ingestion Cloud Function (Eventarc on object.finalized → rag.import_files)
+scripts/        create_corpus.py, deploy-function.sh
+tests/          one file per module; the CLI is tested against a fake store
 ```
 
-> **Note on Repository Type:** You generated a `standard` repository.
-> This layout contains both a standardized data analysis environment (`data`, `outputs`, `scripts`, `tests`) and an installable Python library in `src/`.
-> If you find you do not need the data science folders, you may safely delete them.
+## Develop
 
-**Tip:** To regenerate this tree, run:
-`tree -I '__pycache__|.venv|*.egg-info|.git'`
-(If tree isn't installed run: `brew install tree`)
+```bash
+just setup    # uv sync + git hooks
+just check    # format, lint, mypy strict, tests with coverage ≥ 80 %
+```
 
+## Infrastructure
 
-
-<a id="developers"></a>
-<details>
-<summary><strong>Developers</strong></summary>
-
-### Branching Strategy
-Explained [here](./CONTRIBUTING.md#branching-strategy).
-
-### Running Checks
-- **Tests:** `uv run pytest -v`
-- **Linting:** `uv run ruff check .`
-- **Formatting:** `uv run ruff format .` (use `--check` to verify without modifying)
-- **Type checking:** `uv run mypy src/`
-</details>
+The bucket `geg-core-dev-rag-own-publications` (europe-west1) is defined in
+`gitlab.ethz.ch/geg/geg-infra/geg-core-infra`. The function is deployed with
+`scripts/deploy-function.sh`; it reads the corpus id from the Secret Manager secret
+`rag-own-publications-corpus-id`. How the group uses the RAG is documented in geg-ops,
+`computing/ai/literature-rag.md`.

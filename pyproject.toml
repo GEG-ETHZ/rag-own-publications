@@ -5,7 +5,13 @@ description = "Upload GEG publications to the RAG bucket under DOI-based names, 
 authors = [{name = "ETHZ/EAPS/GEG Group"}]
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "google-cloud-storage>=3.17.1",
+    "httpx>=0.28.1",
+    "pymupdf>=2.0",
+    "python-slugify>=9.1.3",
+    "tabulate>=0.10.0",
+]
 
 
 [dependency-groups]   # e.g. uv add --group dev ruff
@@ -16,8 +22,11 @@ dev = [
     "pylsp-mypy~=0.7",  # provides connection from python LSP to mypy
     "pylsp-rope~=0.1",  # provides linting tools
     "prek>=0.3.13",  # git hook management
-
+    "pytest-cov>=7.1.0",
 ]
+
+[project.scripts]
+geg-rag-upload = "rag_own_publications.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -57,7 +66,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["rag-own-publications"]
+known-first-party = ["rag_own_publications"]
 
 [tool.ruff.lint.per-file-ignores]   # otherwise ruff shows "imported but unused" error
 "__init__.py" = ["F401"]
@@ -75,3 +84,19 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--cov=rag_own_publications --cov-report=term-missing --cov-fail-under=80"
+
+[[tool.mypy.overrides]]
+module = ["google.cloud.*", "tabulate", "vertexai", "vertexai.*", "functions_framework", "cloudevents.*"]
+ignore_missing_imports = true
+
+# PyMuPDF ships only partial type hints; its Document/Page calls are untyped.
+[[tool.mypy.overrides]]
+module = ["rag_own_publications.pdfmeta", "tests.test_pdfmeta", "tests.test_cli"]
+disallow_untyped_calls = false
+
+# function/main.py is deployed as-is to Cloud Functions; functions_framework's decorator is untyped.
+[[tool.mypy.overrides]]
+module = ["main"]
+disallow_untyped_decorators = false
+warn_return_any = false

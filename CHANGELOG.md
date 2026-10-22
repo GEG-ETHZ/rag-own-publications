@@ -9,6 +9,11 @@ adopt SemVer strictly.
 
 ### Added
 
+- `geg-rag-upload upload` and `migrate`: name a PDF after its DOI (or normalised title), skip files
+  already in the bucket by name or by content hash, write bibliographic metadata on the object.
+- `function/`: the ingestion Cloud Function source, previously deployed only from a zip.
+- `scripts/create_corpus.py` and `scripts/deploy-function.sh`.
+
 ### Changed
 
 ### Fixed
@@ -17,4 +22,4 @@ adopt SemVer strictly.
 
 <!-- Version comparison links — verify and update when cutting a release.
      Label is [Unreleased] (not [In Development]) so changelog tooling recognises it. -->
-[Unreleased]: https://github.com/your-org/your-repo/-/commits/main
+[Unreleased]: https://github.com/GEG-ETHZ/rag-own-publications/commits/main

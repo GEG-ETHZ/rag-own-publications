@@ -20,3 +20,5 @@ outputs/*
 # Ignore Jupyter notebooks and checkpoints if users create them anyway
 *.ipynb
 .ipynb_checkpoints/
+
+.coverage
