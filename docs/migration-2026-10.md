@@ -39,3 +39,18 @@ GSA Data Repository supplement (named as its parent paper, `10.1130/g37349.1`) a
 6. Wait for the corpus to list every file, test in the Playground.
 7. Switch the agent: `scripts/switch-agent-corpus.sh 4185840766943232000 <new corpus name>`. To roll
    back, run it with `projects/geg-core-dev/locations/europe-west1/ragCorpora/6917529027641081856`.
+
+## What happened on the day (2026-10-22)
+
+- 236 papers uploaded. One large PDF timed out on the 60 s default request timeout and stopped the
+  run; uploads now get 900 s and a failure no longer stops the run.
+- The ingestion function scaled out and fired parallel imports. RAG Engine allows one import per corpus
+  at a time, so most failed and, without retries, were dropped: 18 of 236 reached the corpus. The
+  function now runs as one instance, waits while the corpus is busy and is retried by Eventarc.
+- Catch-up with `scripts/import_bucket.py`: 186 imported, 32 failed. Two were over the 50 MB file limit
+  (the Hefny and Grimm Lima dissertations, 83 and 71 MB); both were rewritten with Ghostscript
+  (`-dPDFSETTINGS=/ebook`, 3.8 and 7.5 MB, all pages and text kept) and re-uploaded with `--force`.
+  The rest were "internal error" from the Gemini parser under load and passed on a second run.
+- `10.1016_j.advwatres.2018.02.009` (Vogler 2018) failed twice; rewritten with Ghostscript, it imported.
+- Result: 236 files in corpus `GEG-Own-Publications`
+  (`projects/436056981716/locations/europe-west1/ragCorpora/2842897264777625600`).
