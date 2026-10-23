@@ -26,6 +26,8 @@ adopt SemVer strictly.
 
 ### Removed
 
+- Everything: moved into GEG-ETHZ/literature-rag on 2026-10-23; this repository is archived.
+
 <!-- Version comparison links — verify and update when cutting a release.
      Label is [Unreleased] (not [In Development]) so changelog tooling recognises it. -->
 [Unreleased]: https://github.com/GEG-ETHZ/rag-own-publications/commits/main
