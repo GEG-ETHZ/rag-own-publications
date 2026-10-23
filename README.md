@@ -55,9 +55,46 @@ src/rag_own_publications/   the CLI
   bucket.py     Google Cloud Storage
   cli.py        argument parsing and the run loop
 function/       the ingestion Cloud Function (Eventarc on object.finalized → rag.import_files)
-scripts/        create_corpus.py, deploy-function.sh
+scripts/        create_corpus.py, deploy-function.sh, missing_list.py
+docs/missing-papers/  GEG papers the RAG has no PDF for yet, and how to add one
 tests/          one file per module; the CLI is tested against a fake store
 ```
+
+## Contribute
+
+### Find a missing paper
+
+81 GEG papers on geg.ethz.ch have no PDF in the RAG yet. Anyone in the group can help, no coding
+needed beyond running the upload tool.
+
+1. Pick a paper from [docs/missing-papers/PAPERS_TO_GET.md](docs/missing-papers/PAPERS_TO_GET.md).
+   The list is grouped by what to try: ETH network or VPN, a title search, or asking the author.
+2. Upload the PDF with `geg-rag-upload upload paper.pdf`, as described under [Use](#use).
+3. Remove the paper's row from `docs/missing-papers/still_to_get.csv`, rebuild the list with
+   `uv run python scripts/missing_list.py docs/missing-papers/still_to_get.csv docs/missing-papers/PAPERS_TO_GET.md`,
+   and open a pull request.
+
+If you cannot get a paper, record who tried, when and what happened in its CSV row instead. Details:
+[docs/missing-papers/README.md](docs/missing-papers/README.md).
+
+**Never commit a PDF.** This repository is public and the papers are under copyright. PDFs go into
+the bucket only; `.gitignore` blocks them.
+
+### Change the code
+
+1. Clone, then run `just setup` once.
+2. Branch from `main` as `<type>/<description>`, for example `feat/title-fallback` or
+   `docs/missing-papers`.
+3. Write the test first, then the code. `just check` runs format, lint, strict mypy and the tests
+   with coverage of at least 80 %; it must pass.
+4. Commit in the form `type(scope): subject`, for example `fix(naming): keep the DOI suffix`.
+5. Open a pull request against `main`. Someone else reviews it; it is squash-merged.
+
+The full rules, and when the repository would get a `develop` branch, are in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+A change to `function/` reaches production only after `scripts/deploy-function.sh`; say in the pull
+request whether it was deployed.
 
 ## Develop
 

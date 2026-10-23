@@ -22,3 +22,6 @@ outputs/*
 .ipynb_checkpoints/
 
 .coverage
+
+# Papers belong in the bucket, never in this public repository
+*.pdf

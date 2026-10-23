@@ -1,79 +1,43 @@
 # Contributing
 
-## Branching Strategy
+This repository follows the group's branching and review rules in geg-ops,
+[`computing/code/branching-and-review.md`](https://github.com/GEG-ETHZ/geg-ops/blob/main/computing/code/branching-and-review.md).
+What they mean here:
 
-### Persistent Branches
-- `main` — production-ready code
-- `develop` — integration branch for ongoing work
+## Branches
 
-### Topic Branches
-- `dev/<feature>` — feature branches (e.g., `dev/fix-convergence`)
-- `fix/<issue>` — bug fixes
-- `exp/<name>` — experimental / throwaway work
+| Type | Branch | Purpose |
+|---|---|---|
+| Persistent | `main` | Production-ready, the default branch, protected |
+| Topic | `<type>/<description>` | One change, e.g. `feat/title-fallback`, `fix/doi-suffix`, `docs/missing-papers` |
 
-All merges into `main` must be peer reviewed via a GitLab Merge Request (or GitHub Pull Request).
-Topic branch work is normally merged into `develop` first; direct merges to
-`main` require explicit sign-off from the lead developer.
-Case-specific work may be done directly on `develop` with lead-developer
-approval.
+`<type>` is the Conventional Commits type of the change (`feat`, `fix`, `docs`, `refactor`, `test`,
+`chore`, `perf`, `ci`), `<description>` is short kebab-case. Commits use the same form with a scope:
+`fix(naming): keep the DOI suffix`.
 
-### Branching Strategy Diagram
+There is no `develop` branch. The group adds one only where changes can be tested in a development
+setting before they reach production. Here the ingestion function is deployed by hand into
+`geg-core-dev`, and there is no second deployment to test in.
 
-> **Note on diagram format**: Standard Markdown cannot embed draw.io (`.drawio`)
-> files. The diagram below uses [Mermaid](https://mermaid.js.org/), which
-> renders natively on GitLab, GitHub, and VS Code (with the Mermaid extension).
+## Merging
 
-```mermaid
-%%{init: { 'logLevel': 'debug', 'theme': 'base',
-           'gitGraph': {'rotateCommitLabel': false} } }%%
-gitGraph LR:
-   commit id: "initial"
+1. Branch from `main`, open a pull request against `main`.
+2. Someone other than the author reviews it. One approval is required.
+3. `just check` passes and the branch is up to date with `main`.
+4. The pull request is squash-merged and the branch deleted.
+5. Nobody pushes to `main` directly. Coding assistants do not push; a person does.
 
-   branch develop
-   checkout develop
-   commit id: "dev work"
+A change to `function/` reaches production only when someone runs `scripts/deploy-function.sh`. Say in
+the pull request whether it was deployed.
 
-   branch dev/my-feature
-   checkout dev/my-feature
-   commit id: "feat: init"
-   commit id: "feat: done"
+## When to add `develop`
 
-   checkout develop
-   merge dev/my-feature id: "MR: feature → develop"
+Add it when there is a separate place to try a change before production, for example a second
+function and corpus for testing. An admin of the repository then, by hand:
 
-   checkout main
-   branch fix/hotfix
-   checkout fix/hotfix
-   commit id: "hotfix"
-   checkout main
-   merge fix/hotfix id: "hotfix MR (direct)"
+1. Creates `develop` from `main` and pushes it.
+2. Protects it: restrict deletions, block force pushes.
+3. Keeps `main` as the default branch.
+4. Updates this file and the README so pull requests target `develop`.
 
-   checkout develop
-   merge main id: "sync from main"
-
-   checkout develop
-   branch fix/some-bug
-   checkout fix/some-bug
-   commit id: "fix: bug"
-   checkout develop
-   merge fix/some-bug id: "MR: fix → develop"
-
-   branch exp/prototype
-   checkout exp/prototype
-   commit id: "e1"
-   commit id: "e2"
-
-   checkout main
-   merge develop id: "release MR"
-```
-
-**Key rules encoded in the diagram:**
-
-| Branch | Created from | Merges into | Requires MR? |
-|---|---|---|---|
-| `develop` | `main` | `main` | Yes |
-| `dev/<feature>` | `develop` or `main` | `develop` or `main`* | Yes |
-| `fix/<issue>` | `develop` or `main` | `develop` or `main`* | Yes |
-| `exp/<name>` | anywhere | typically abandoned | — |
-
-\* Direct merge to `main` requires lead-developer approval.
+From then on `develop` merges into `main` with a merge commit, through a reviewed pull request.

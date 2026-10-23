@@ -13,8 +13,14 @@ adopt SemVer strictly.
   already in the bucket by name or by content hash, write bibliographic metadata on the object.
 - `function/`: the ingestion Cloud Function source, previously deployed only from a zip.
 - `scripts/create_corpus.py` and `scripts/deploy-function.sh`.
+- `docs/missing-papers/`: the 81 GEG papers without a PDF, how to find and add one, and
+  `scripts/missing_list.py` to rebuild the checklist from the CSV.
+- README: how to contribute a missing paper or a code change.
 
 ### Changed
+
+- CONTRIBUTING.md follows the group's branching rules: `main` plus `<type>/<description>` topic
+  branches, squash-merged; no `develop` until there is a separate place to test a change.
 
 ### Fixed
 
