@@ -83,11 +83,15 @@ the bucket only; `.gitignore` blocks them.
 ### Change the code
 
 1. Clone, then run `just setup` once.
-2. Branch from `main`: `dev/<feature>` for a feature, `fix/<issue>` for a bug fix.
+2. Branch from `main` as `<type>/<description>`, for example `feat/title-fallback` or
+   `docs/missing-papers`.
 3. Write the test first, then the code. `just check` runs format, lint, strict mypy and the tests
    with coverage of at least 80 %; it must pass.
 4. Commit in the form `type(scope): subject`, for example `fix(naming): keep the DOI suffix`.
-5. Open a pull request against `main`. Someone else reviews and merges it.
+5. Open a pull request against `main`. Someone else reviews it; it is squash-merged.
+
+The full rules, and when the repository would get a `develop` branch, are in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 A change to `function/` reaches production only after `scripts/deploy-function.sh`; say in the pull
 request whether it was deployed.

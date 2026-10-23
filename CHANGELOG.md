@@ -19,6 +19,9 @@ adopt SemVer strictly.
 
 ### Changed
 
+- CONTRIBUTING.md follows the group's branching rules: `main` plus `<type>/<description>` topic
+  branches, squash-merged; no `develop` until there is a separate place to test a change.
+
 ### Fixed
 
 ### Removed
